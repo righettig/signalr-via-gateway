@@ -1,7 +1,7 @@
 import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { io, Socket } from 'socket.io-client';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
 @Injectable()
 @WebSocketGateway(3001, { cors: true }) // WebSocket server on port 3001
@@ -9,43 +9,31 @@ export class SignalRGatewayService implements OnModuleInit {
     @WebSocketServer()
     server: Server;
 
-    private signalRSocket: Socket;
+    private connection: HubConnection;
 
     onModuleInit() {
-        console.log("MODULE INIT");
+        this.connection = new HubConnectionBuilder()
+            .withUrl("http://localhost:5000/chatHub")
+            .configureLogging(LogLevel.Information)
+            .build();
 
-        // Connect to the ASP.NET Core SignalR Hub
-        this.signalRSocket = io('http://localhost:5000/chatHub');
+        this.connection.start()
+            .then(() => {
+                console.log("Connected to the SignalR hub");
 
-        //this.signalRSocket.connect();
-
-        this.signalRSocket.on('connect', () => {
-            console.log('connect', this.signalRSocket.connected);
-        });
-
-        this.signalRSocket.on('disconnect', () => {
-            console.log('connect', this.signalRSocket.connected);
-        });
-
-        // Listen for incoming messages from SignalR Hub
-        this.signalRSocket.on('ReceiveMessage', (user: string, message: string) => {
-            // Broadcast the received message to all connected Angular clients
-            this.server.emit('ReceiveMessage', { user, message });
-        });
-
-        setInterval(() => {
-            this.server.emit('ReceiveMessage', { user: "foo", message: "bar" });
-        }, 3000);
+                // Example: Listening to messages from the hub
+                this.connection.on('ReceiveMessage', (user: string, message: string) => {
+                    // Broadcast the received message to all connected Angular clients
+                    this.server.emit('ReceiveMessage', { user, message });
+                });
+            })
+            .catch(err => console.error("Error starting the connection:", err));
     }
 
     // Listen for messages from the Angular front-end
     @SubscribeMessage('sendMessage')
     handleMessage(@MessageBody() data: { user: string; message: string }) {
-        //console.log("FOO");
-        console.log("active: " + this.signalRSocket.active);
-        console.log("connected: " + this.signalRSocket.connected);
-
         // Relay the message to the ASP.NET Core SignalR Hub
-        this.signalRSocket.emit('SendMessage', data.user, data.message);
+        this.connection.send('SendMessage', data.user, data.message);
     }
 }

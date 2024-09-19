@@ -1,9 +1,18 @@
-@for (message of receivedMessages; track message) {
-    <ul>
-        <li>message</li>
-    </ul>
-} @empty {
-    No messages
-}
+<h2>Angular to SignalR via NestJs gateway service</h2>
 
-<button (click)="sendMessage()">SEND</button>
+<div style="padding-bottom: 16px;">
+    <button (click)="sendMessage()">Send message via gateway</button>
+</div>
+
+<div>
+    <h3>Message received from gateway</h3>
+    <div style="padding-left: 8px;">
+        @for (message of receivedMessages; track message) {
+            <ul>
+                <li>message</li>
+            </ul>
+        } @empty {
+            No messages
+        }    
+    </div>
+</div>

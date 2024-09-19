@@ -1,3 +1,5 @@
+using SignalR.Hubs;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -7,9 +9,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalApps", policyBuilder =>
+    options.AddPolicy("AllowGateway", policyBuilder =>
     {
-        policyBuilder.AllowAnyOrigin()
+        policyBuilder.WithOrigins("http://localhost:3000")
                      .AllowAnyHeader()
                      .AllowAnyMethod()
                      .AllowCredentials();
@@ -26,7 +28,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthorization();
-app.MapHub<ChatHub>("/chatHub").RequireCors("AllowLocalApps");
+app.UseCors("AllowGateway");
+
+app.MapHub<ChatHub>("/chatHub").RequireCors("AllowGateway");
 app.MapControllers();
 
 app.Run();
