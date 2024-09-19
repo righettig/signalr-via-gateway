@@ -1,0 +1,9 @@
+@for (message of receivedMessages; track message) {
+    <ul>
+        <li>message</li>
+    </ul>
+} @empty {
+    No messages
+}
+
+<button (click)="sendMessage()">SEND</button>
